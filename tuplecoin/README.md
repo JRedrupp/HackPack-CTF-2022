@@ -121,3 +121,38 @@ b'{"detail":"That\'s Tuco\'s account number! Don\'t make Tuco mad!"}'
 
 There seems to be some entrypoint i'm not getting here.
 Lets wait until the writeups - my thought is that it is to do with reverse engineering the `auth_tag` however I'm not sure where to start as it doesnt decode to anything useful.
+
+## Conclusion
+So I wasn't able to solve tuple coin - however looking at articles since there are some key takeaways.
+
+The first missed clue was that there was a page - robots.txt - from this I should have been able to find the source code to the backend. Specifically this python function,
+```python
+
+ 59 class Transaction(BaseModel):
+ 60    from_acct: int
+ 61    to_acct: int
+ 62    num_tuco: float
+ 63
+ 64    def serialize(self) -> bytes:
+ 65        return (str(self.from_acct) + str(self.to_acct) + str(self.num_tuco)).encode()
+ 66
+ 67    def sign(self, secret_key: bytes) -> AuthenticatedTransaction:
+ 68        tuco_smash = self.serialize()
+ 69        tuco_hash = hmac.new(secret_key, tuco_smash, "sha256").hexdigest()
+ 70        
+ 71        return CertifiedTransaction.parse_obj({
+ 72            "transaction": {
+ 73                "from_acct": self.from_acct,
+ 74                "to_acct": self.to_acct,
+ 75                "num_tuco": self.num_tuco
+ 76            },
+ 77            "auth_tag": tuco_hash,
+ 78        })
+ 79
+```
+
+Here you can see that the serialise function just joins the accounts and the number of tuco and then does a has on it. Key think here is that it is without a delimiter. So this means we can reverse engineer!
+
+If we were to in the certify request just put tuco's 1st half of his account as the from, then the second half of his account as the too - and then the number of coins as -> <to_acc><num_coine> we will then get the correct hash to validate our send!
+
+Thanks to https://ev1lm0rty.com/posts/writeup-hackpack-2022/ for the guidance here!
