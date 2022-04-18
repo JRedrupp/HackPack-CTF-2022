@@ -1,49 +1,56 @@
 # TupleCoin
+
 ## Description
 
 TupleCoin is launching their eponymous cryptocurrency today, and their flamboyant and capricious CEO is challenging you to bring home a bug bounty. Can you crack the crypto?!
 `tuplecoin.cha.hackpack.club`
 
 ## Exploration
+
 Heading over to that site I see a website where a user can create an account and transfer coins to and from accounts.
 
 There is a bounty page asking hunters to try and steal coins from Tuco
 
 Info:
- - His account number is 314159265, and you can't have it.
- - He absolutely hates robots, especially ones from Silicon Valley.
- - He never found a sack of gold, or crypto, that wasn't worth almost dying for until he thought better of it.
- 
- Lets claim an account.
+
+- His account number is 314159265, and you can't have it.
+- He absolutely hates robots, especially ones from Silicon Valley.
+- He never found a sack of gold, or crypto, that wasn't worth almost dying for until he thought better of it.
+
+Lets claim an account.
 
  Number - #452139554 (3.14159 TuCo)
 
- ## Transferring Money
+## Transferring Money
+
  I see we can Transfer money. Lets Transfer to Tuco's account and check out the request.
 
  It made 2 Post Methods:
  1:
+
  ```python
  url = 'https://tuplecoin.cha.hackpack.club/api/transaction/certify'
  body = {"from_acct":452139554,"to_acct":314159265,"num_tuco":1}
  resp = {
-	"transaction": {
-		"from_acct": 452139554,
-		"to_acct": 314159265,
-		"num_tuco": 1
-	}
+ "transaction": {
+  "from_acct": 452139554,
+  "to_acct": 314159265,
+  "num_tuco": 1
+ }
 }
  ```
+
  2:
+
  ```python
  url = 'https://tuplecoin.cha.hackpack.club/api/transaction/commit'
  body = {
-	"auth_tag": "d4f7afe3dd729d535319a72bda14951ffbc822ce10c91b8fd8a4d7d87f97498b",
-	"transaction": {
-		"from_acct": 452139554,
-		"num_tuco": 1,
-		"to_acct": 314159265
-	}
+ "auth_tag": "d4f7afe3dd729d535319a72bda14951ffbc822ce10c91b8fd8a4d7d87f97498b",
+ "transaction": {
+  "from_acct": 452139554,
+  "num_tuco": 1,
+  "to_acct": 314159265
+ }
 }
  resp = "OK"
  ```
@@ -54,6 +61,7 @@ So i'll try and do the request myself as it is the UI that stops me from enterin
 
 I'll look to make the requests in Python.
 I Try the following:
+
 ```python
 import requests
 
@@ -67,7 +75,9 @@ response = requests.post('https://tuplecoin.cha.hackpack.club/api/transaction/ce
 
 print(response.content)
 ```
+
 and get
+
 ```python
 b'{"detail":"Ha! You think you can steal from Tuco so easily?!!"}'
 ```
@@ -85,6 +95,7 @@ Lets spin up cyberchef and try and decode what looks like hex.
 Decoding it in Hex doesn't seem to yield me anything useful.
 
 ### Own Tuco's Account
+
 Maybe i can look to see if I can own Tuco's Account somehow.
 
 Lets go back to the accounts page and check what the request is when I create an account.
@@ -93,11 +104,11 @@ Lets go back to the accounts page and check what the request is when I create an
 curl 'https://tuplecoin.cha.hackpack.club/api/account/claim?acct_num=5464654'
 
 response - {
-	"balance": {
-		"acct_num": 5464654,
-		"num_tuco": 3.141592653589793
-	},
-	"auth_tag": "2876e7121c1cc941ac25edb58e3ca970bec3c79d547739b51f8e78d47dc37231"
+ "balance": {
+  "acct_num": 5464654,
+  "num_tuco": 3.141592653589793
+ },
+ "auth_tag": "2876e7121c1cc941ac25edb58e3ca970bec3c79d547739b51f8e78d47dc37231"
 }
 ```
 
@@ -123,9 +134,11 @@ There seems to be some entrypoint i'm not getting here.
 Lets wait until the writeups - my thought is that it is to do with reverse engineering the `auth_tag` however I'm not sure where to start as it doesnt decode to anything useful.
 
 ## Conclusion
+
 So I wasn't able to solve tuple coin - however looking at articles since there are some key takeaways.
 
 The first missed clue was that there was a page - robots.txt - from this I should have been able to find the source code to the backend. Specifically this python function,
+
 ```python
 
  59 class Transaction(BaseModel):
@@ -155,4 +168,4 @@ Here you can see that the serialise function just joins the accounts and the num
 
 If we were to in the certify request just put tuco's 1st half of his account as the from, then the second half of his account as the too - and then the number of coins as -> <to_acc><num_coine> we will then get the correct hash to validate our send!
 
-Thanks to https://ev1lm0rty.com/posts/writeup-hackpack-2022/ for the guidance here!
+Thanks to <https://ev1lm0rty.com/posts/writeup-hackpack-2022/> for the guidance here!
